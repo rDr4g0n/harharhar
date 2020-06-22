@@ -28,8 +28,6 @@ const analyzeHar = filename => {
 
   const entries = allEntries.slice(startIndex, endIndex);
 
-  // console.log(entries.map(e => e.request.url));
-
   const firstRequestTime = msFromDateTime(entries[0].startedDateTime);
 
   const duration = (
@@ -40,6 +38,7 @@ const analyzeHar = filename => {
 
   const intervals = entries.map(e => {
     // NOTE - offset based on first request
+    // TODO - include entry along with interval
     const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
     return [began, began + e.time]
   });
@@ -48,16 +47,13 @@ const analyzeHar = filename => {
   // TODO - label cluster content
   // TODO - further subdivide by okta vs infoblox
   const networkTime = discreteIntervals.reduce((acc, [start, end]) => end - start + acc, 0);
-  const userTime = duration - networkTime;
 
   return {
     name: last(filename.split("/")),
     duration,
     networkTime,
-    userTime,
-    startIndex,
-    endIndex,
-    length: allEntries.length
+    count: allEntries.length,
+    intervals: discreteIntervals,
   };
 };
 
@@ -86,8 +82,8 @@ const AS_CSV = true;
 const AS_JSON = false;
 
 if(AS_CSV){
-  const statsAsCSV = '"name","network","userTime","total","count"\n' +
-    stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.userTime/1000)}","${Math.floor(s.duration/1000)}","${s.length}"`).join("\n")
+  const statsAsCSV = '"name","network","total","count"\n' +
+    stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.duration/1000)}","${s.count}"`).join("\n")
   console.log(statsAsCSV);
 }
 
