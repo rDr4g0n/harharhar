@@ -1,0 +1,14 @@
+{
+  "name": "harharhar",
+  "version": "1.0.0",
+  "description": "useful info from har file",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@flatten-js/interval-tree": "^1.0.11"
+  }
+}
