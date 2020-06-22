@@ -20,15 +20,16 @@ function analyzeHar(filename) {
   let endIndex = allEntries.findIndex(e => e.request.url.includes("whatsnew"));
 
   if(startIndex === -1){
-    // console.log("WARNING: could not find a starting point");
+    process.stderr.write(`WARNING: could not find starting point for ${filename}\n`);
     startIndex = 0;
   }
   if(endIndex === -1){
-    // console.log("WARNING: could not find an ending point");
+    process.stderr.write(`WARNING: could not find ending point for ${filename}\n`);
     endIndex = allEntries.length - 1
   }
 
-  const entries = allEntries.slice(startIndex, endIndex);
+  const entries = allEntries.slice(startIndex, endIndex)
+    .sort((a, b) => msFromDateTime(a.startedDateTime) - msFromDateTime(b.startedDateTime));
 
   const firstRequestTime = msFromDateTime(entries[0].startedDateTime);
 
