@@ -2,6 +2,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const commandLineArgs = require('command-line-args');
+const commandLineUsage = require('command-line-usage');
 
 const { generateDiscreteIntervals } = require("./intervals");
 
@@ -9,7 +11,7 @@ const msFromDateTime = d => new Date(d).getTime()
 const last = arr => arr[arr.length-1];
 const msToS = ms => Math.floor(ms / 1000);
 
-const analyzeHar = filename => {
+function analyzeHar(filename) {
   const har = fs.readFileSync(filename, "utf8");
   const harData = JSON.parse(har);
 
@@ -57,36 +59,49 @@ const analyzeHar = filename => {
   };
 };
 
-const dirOrFile = process.argv[2];
+function cli({ dirOrFile, csv, json }){
+  const dirOrFilePath = path.resolve(dirOrFile);
 
-if(!dirOrFile) {
-  console.log("Please provide har file or directory containing har files");
-  process.exit(1);
+  const fileStats = fs.lstatSync(dirOrFilePath);
+  let files = [dirOrFilePath];
+
+  if(fileStats.isDirectory()){
+    files = fs.readdirSync(dirOrFilePath)
+      .filter(name => name.endsWith("har"))
+      .map(name => path.join(dirOrFilePath, name));
+  }
+
+  const stats = files.map(analyzeHar);
+
+  if(csv){
+    const statsAsCSV = '"name","network","total","count"\n' +
+      stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.duration/1000)}","${s.count}"`).join("\n")
+    console.log(statsAsCSV);
+  }
+
+  if(json) {
+    console.log(JSON.stringify(stats, null, "  "));
+  }
 }
 
-const dirOrFilePath = path.resolve(dirOrFile);
+const optionDefs = [
+  { name: "dirOrFile", type: String, defaultOption: true, description: "Path to a har file or directory containing har files" },
+  { name: "csv", type: Boolean, description: "output analysis in csv format" },
+  { name: "json", type: Boolean, description: "output analysis in json format" },
+  { name: "help", alias: "h", type: Boolean, description: "display this help" }
+];
+const options = commandLineArgs(optionDefs);
 
-const fileStats = fs.lstatSync(dirOrFilePath);
-let files = [dirOrFilePath];
-
-if(fileStats.isDirectory()){
-  files = fs.readdirSync(dirOrFilePath)
-    .filter(name => name.endsWith("har"))
-    .map(name => path.join(dirOrFilePath, name));
+if (options.help || !options.dirOrFile) {
+  console.log(commandLineUsage([{
+    header: 'Options',
+    optionList: optionDefs
+  }]));
+  process.exit();
 }
 
-const stats = files.map(analyzeHar);
-
-// TODO - get output format from cli
-const AS_CSV = true;
-const AS_JSON = false;
-
-if(AS_CSV){
-  const statsAsCSV = '"name","network","total","count"\n' +
-    stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.duration/1000)}","${s.count}"`).join("\n")
-  console.log(statsAsCSV);
+if(!options.csv && !options.json){
+  options.json = true;
 }
 
-if(AS_JSON) {
-  console.log(JSON.stringify(stats, null, "  "));
-}
+cli(options);
