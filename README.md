@@ -17,11 +17,11 @@ Or a directory containing many har files
 
     ./src/index.js ~/path/to/myharfiles
 
-You can set the output format to csv or json
+You can set the output format to csv, json, or html. default is csv
 
-    ./src/index.js --csv ~/path/to/harfile.har
-    ./src/index.js --json ~/path/to/harfile.har
+    ./src/index.js --output csv ~/path/to/harfile.har
+    ./src/index.js --output json ~/path/to/harfile.har
 
 Save the output to a file with redirects
 
-    ./src/index.js --csv ~/path/to/harfile.har > results.csv
+    ./src/index.js --output json ~/path/to/harfile.har > results.json

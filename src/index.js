@@ -6,6 +6,7 @@ const commandLineArgs = require('command-line-args');
 const commandLineUsage = require('command-line-usage');
 
 const { generateDiscreteIntervals } = require("./intervals");
+const renderers = require("./renderers");
 
 const msFromDateTime = d => new Date(d).getTime()
 const last = arr => arr[arr.length-1];
@@ -74,6 +75,9 @@ function cli({ dirOrFile, csv, json }){
 
   const stats = files.map(analyzeHar);
 
+  console.log(renderers[options.output](stats));
+
+
   if(csv){
     const statsAsCSV = '"name","network","total","count"\n' +
       stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.duration/1000)}","${s.count}"`).join("\n")
@@ -87,8 +91,7 @@ function cli({ dirOrFile, csv, json }){
 
 const optionDefs = [
   { name: "dirOrFile", type: String, defaultOption: true, description: "Path to a har file or directory containing har files" },
-  { name: "csv", type: Boolean, description: "output analysis in csv format" },
-  { name: "json", type: Boolean, description: "output analysis in json format" },
+  { name: "output", type: String, description: "output format. options are csv, json, html" },
   { name: "help", alias: "h", type: Boolean, description: "display this help" }
 ];
 const options = commandLineArgs(optionDefs);
@@ -101,8 +104,9 @@ if (options.help || !options.dirOrFile) {
   process.exit();
 }
 
-if(!options.csv && !options.json){
-  options.json = true;
+if(!options.output){
+  options.output = csv;
 }
+// TODO - validate renderer selection
 
 cli(options);
