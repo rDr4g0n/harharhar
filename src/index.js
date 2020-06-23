@@ -12,6 +12,20 @@ const msFromDateTime = d => new Date(d).getTime()
 const last = arr => arr[arr.length-1];
 const msToS = ms => Math.floor(ms / 1000);
 
+const discreteIntervalsFromEntries = (entries, filter = val=>val) => {
+  const firstRequestTime = msFromDateTime(entries[0].startedDateTime);
+  return generateDiscreteIntervals(
+    entries
+      .filter(filter)
+      .map(e => {
+        // NOTE - offset based on first request
+        // TODO - include entry along with interval
+        const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
+        return [began, began + e.time]
+      })
+  );
+}
+
 function analyzeHar(filename) {
   const har = fs.readFileSync(filename, "utf8");
   const harData = JSON.parse(har);
@@ -40,37 +54,10 @@ function analyzeHar(filename) {
     firstRequestTime
   );
 
-  const intervals = entries.map(e => {
-    // NOTE - offset based on first request
-    // TODO - include entry along with interval
-    const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
-    return [began, began + e.time]
-  });
-  const discreteIntervals = generateDiscreteIntervals(intervals);
-  // TODO - generate timeline
-  // TODO - label cluster content
-  // TODO - further subdivide by okta vs infoblox
+  const discreteIntervals = discreteIntervalsFromEntries(entries)
   const networkTime = discreteIntervals.reduce((acc, [start, end]) => end - start + acc, 0);
-
-  // TODO - do this cleaner-ly
-  const oktaIntervals = entries
-    .filter(e => e.request.url.includes("okta"))
-    .map(e => {
-      // NOTE - offset based on first request
-      // TODO - include entry along with interval
-      const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
-      return [began, began + e.time]
-    });
-  const otherIntervals = entries
-    .filter(e => !e.request.url.includes("okta"))
-    .map(e => {
-      // NOTE - offset based on first request
-      // TODO - include entry along with interval
-      const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
-      return [began, began + e.time]
-    });
-  const discreteOktaIntervals = generateDiscreteIntervals(oktaIntervals);
-  const discreteOtherIntervals = generateDiscreteIntervals(otherIntervals);
+  const discreteOktaIntervals = discreteIntervalsFromEntries(entries, e => e.request.url.includes("okta"));
+  const discreteOtherIntervals = discreteIntervalsFromEntries(entries, e => !e.request.url.includes("okta"));
 
   return {
     name: last(filename.split("/")),

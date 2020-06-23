@@ -12,23 +12,22 @@ const html = stats => {
     * { font-family: arial, sans-serif; margin: 0; padding: 0; font-size: 20px; }
     body { padding: 10px; }
     table { border-collapse: collapse; }
-    td.number, th.number { text-align: right; }
+    td.number { text-align: right; }
     td { padding: 2px 8px; border-bottom: solid #CCC 1px; }
-    .viz-wrap { width: 100%; }
-    .viz-timeline { position: relative; width: 100%; height: 7px; background-color: #CCC; }
-    .interval { position: absolute; top: 0; left: 0; height: 7px; background-color: black; }
+    .viz-wrap { width: 100%; display: flex; align-items: center; }
+    .viz-timeline { position: relative; width: 100%; height: 10px; background-color: #CCC; }
+    .viz-total { font-size: 14px; padding-left: 4px; }
+    .interval { position: absolute; top: 0; left: 0; height: 10px; background-color: black; }
     .interval.okta { background-color: deeppink; }
   </style>`;
 
   const VIZ_PADDING = 16;
-  const VIZ_WIDTH = 200;
+  const VIZ_WIDTH = 300;
 
   const header = `<tr>
     <th>Name</th>
     <th width="100" class="number">Network (seconds)</th>
-    <th width="100" class="number">Total Time (seconds)</th>
-    <th width="100" class="number">Request Count</th>
-    <th width="${VIZ_WIDTH}">Request Timeline (pink = okta)</th>
+    <th width="${VIZ_WIDTH}">Request Timeline<br>(pink = okta)</th>
   <tr>`;
 
   const xScale = scaleLinear()
@@ -40,21 +39,20 @@ const html = stats => {
   const toViz = s => {
     return `<div class="viz-wrap">
       <div class="viz-timeline" style="width: ${xScale(s.duration)}px;">
-        ${s.discreteOktaIntervals.map(i => `
-          <div class="interval okta" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
-        `).join("")}
         ${s.discreteOtherIntervals.map(i => `
           <div class="interval" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
         `).join("")}
+        ${s.discreteOktaIntervals.map(i => `
+          <div class="interval okta" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
+        `).join("")}
       </div>
+      <div class="viz-total">${msToS(s.duration)}s</div>
     </div>`
   } 
 
   const toRow = s => `<tr>
     <td>${s.name}</td>
     <td class="number">${msToS(s.networkTime)}</td>
-    <td class="number">${msToS(s.duration)}</td>
-    <td class="number">${s.count}</td>
     <td>${toViz(s)}</td>
   </tr>`;
 
