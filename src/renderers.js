@@ -9,16 +9,18 @@ const html = stats => {
   const msToS = ms => Math.floor(ms / 1000)
 
   const style = `<style>
-    * { font-family: arial, sans-serif; margin: 0; padding: 0; }
+    * { font-family: arial, sans-serif; margin: 0; padding: 0; font-size: 20px; }
     body { padding: 10px; }
     table { border-collapse: collapse; }
     td.number, th.number { text-align: right; }
-    td { padding: 2px 5px; border-bottom: solid #CCC 1px; }
-    td.viz { padding: 0; }
-    .viz-wrap { position: relative; width: 100%; height: 5px; background-color: #DDD; }
-    .interval { position: absolute; top: 0; left: 0; height: 5px; background-color: black; }
+    td { padding: 2px 8px; border-bottom: solid #CCC 1px; }
+    .viz-wrap { width: 100%; }
+    .viz-timeline { position: relative; width: 100%; height: 7px; background-color: #CCC; }
+    .interval { position: absolute; top: 0; left: 0; height: 7px; background-color: black; }
+    .interval.okta { background-color: deeppink; }
   </style>`;
 
+  const VIZ_PADDING = 16;
   const VIZ_WIDTH = 200;
 
   const header = `<tr>
@@ -26,7 +28,7 @@ const html = stats => {
     <th width="100" class="number">Network (seconds)</th>
     <th width="100" class="number">Total Time (seconds)</th>
     <th width="100" class="number">Request Count</th>
-    <th width="${VIZ_WIDTH}">Request Timeline</th>
+    <th width="${VIZ_WIDTH}">Request Timeline (pink = okta)</th>
   <tr>`;
 
   const xScale = scaleLinear()
@@ -34,11 +36,18 @@ const html = stats => {
       0,
       stats.reduce((acc, s) => Math.max(acc, s.duration), 0)
     ])
-    .range([0, VIZ_WIDTH]);
+    .range([0, VIZ_WIDTH - VIZ_PADDING]);
   const toViz = s => {
-    return `<div class="viz-wrap">${s.intervals.map(i => `
-      <div class="interval" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
-    `).join("")}</div>`
+    return `<div class="viz-wrap">
+      <div class="viz-timeline" style="width: ${xScale(s.duration)}px;">
+        ${s.discreteOktaIntervals.map(i => `
+          <div class="interval okta" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
+        `).join("")}
+        ${s.discreteOtherIntervals.map(i => `
+          <div class="interval" style="left: ${xScale(i[0])}px; width: ${xScale(i[1]-i[0])}px;"></div>
+        `).join("")}
+      </div>
+    </div>`
   } 
 
   const toRow = s => `<tr>
@@ -46,7 +55,7 @@ const html = stats => {
     <td class="number">${msToS(s.networkTime)}</td>
     <td class="number">${msToS(s.duration)}</td>
     <td class="number">${s.count}</td>
-    <td class="viz">${toViz(s)}</td>
+    <td>${toViz(s)}</td>
   </tr>`;
 
   return `

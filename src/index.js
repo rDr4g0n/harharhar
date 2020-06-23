@@ -52,12 +52,34 @@ function analyzeHar(filename) {
   // TODO - further subdivide by okta vs infoblox
   const networkTime = discreteIntervals.reduce((acc, [start, end]) => end - start + acc, 0);
 
+  // TODO - do this cleaner-ly
+  const oktaIntervals = entries
+    .filter(e => e.request.url.includes("okta"))
+    .map(e => {
+      // NOTE - offset based on first request
+      // TODO - include entry along with interval
+      const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
+      return [began, began + e.time]
+    });
+  const otherIntervals = entries
+    .filter(e => !e.request.url.includes("okta"))
+    .map(e => {
+      // NOTE - offset based on first request
+      // TODO - include entry along with interval
+      const began = msFromDateTime(e.startedDateTime) - firstRequestTime;
+      return [began, began + e.time]
+    });
+  const discreteOktaIntervals = generateDiscreteIntervals(oktaIntervals);
+  const discreteOtherIntervals = generateDiscreteIntervals(otherIntervals);
+
   return {
     name: last(filename.split("/")),
     duration,
     networkTime,
     count: allEntries.length,
     intervals: discreteIntervals,
+    discreteOktaIntervals,
+    discreteOtherIntervals
   };
 };
 
@@ -78,15 +100,6 @@ function cli({ dirOrFile, csv, json }){
   console.log(renderers[options.output](stats));
 
 
-  if(csv){
-    const statsAsCSV = '"name","network","total","count"\n' +
-      stats.map(s => `"${s.name}","${Math.floor(s.networkTime/1000)}","${Math.floor(s.duration/1000)}","${s.count}"`).join("\n")
-    console.log(statsAsCSV);
-  }
-
-  if(json) {
-    console.log(JSON.stringify(stats, null, "  "));
-  }
 }
 
 const optionDefs = [
